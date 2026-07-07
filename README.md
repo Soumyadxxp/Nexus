@@ -7,7 +7,6 @@ Unlike cloud-based AI assistants, Nexus performs all document processing, indexi
 Developed by **Soumyadeep Basu** as part of an undergraduate engineering curriculum.
 
 <img width="1832" height="512" alt="Screenshot 2026-07-08 012243" src="https://github.com/user-attachments/assets/e36078ac-74a3-44f0-9f31-ce8d39d28221" />
-
 <img width="1823" height="591" alt="Screenshot 2026-07-08 012327" src="https://github.com/user-attachments/assets/ccb7cac9-4ab3-4f68-a682-4001a50b672a" />
 
 
