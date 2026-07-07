@@ -321,24 +321,6 @@ An internet connection is required only for downloading models during the first 
 
 ---
 
-## Future Enhancements
-
-The following features are planned for future releases.
-
-- Desktop graphical interface
-- Web interface
-- OCR support
-- Image understanding
-- Audio transcription
-- Multi-document comparison
-- Conversation history
-- Citation generation
-- PDF highlighting
-- FAISS support
-- ChromaDB integration
-
----
-
 ## Author
 
 **Soumyadeep Basu**
