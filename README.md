@@ -13,31 +13,6 @@ Developed by **Soumyadeep Basu** as part of an undergraduate engineering curricu
 
 ---
 
-## Table of Contents
-
-- Overview
-- Features
-- Supported File Formats
-- System Architecture
-- Technologies Used
-- Project Structure
-- Installation
-- Usage
-- Example Queries
-- Built-in Commands
-- Processing Pipeline
-- Models Used
-- Automatic File Monitoring
-- Privacy
-- System Requirements
-- Future Enhancements
-- Contributing
-- License
-- Author
-- Acknowledgements
-
----
-
 ## Overview
 
 Nexus allows users to ask questions about their documents using natural language. Documents are automatically indexed using semantic embeddings, enabling efficient retrieval of relevant information before generating responses with a locally hosted language model.
