@@ -7,6 +7,10 @@ from typing import Tuple, List, Dict, Optional
 import fitz
 from docx import Document as DocxDocument
 from llama_index.core import Document, Settings, VectorStoreIndex
+from llama_index.llms.huggingface import HuggingFaceLLM
+from llama_index.embeddings.langchain import LangchainEmbedding
+from langchain_huggingface import HuggingFaceEmbeddings
+from transformers import AutoTokenizer, AutoModelForCausalLM
 from watchdog.observers import Observer
 from watchdog.events import FileSystemEventHandler
 from threading import Lock
@@ -14,14 +18,11 @@ import hashlib
 import shutil
 import logging
 
-# Suppress verbose warnings
+# Suppress all verbose warnings
 logging.getLogger("transformers").setLevel(logging.ERROR)
+logging.getLogger("llama_index").setLevel(logging.ERROR)
 
 from llama_index.core import StorageContext, load_index_from_storage
-from llama_index.llms.huggingface import HuggingFaceLLM
-from llama_index.embeddings.langchain import LangchainEmbedding
-from langchain_huggingface import HuggingFaceEmbeddings
-from transformers import AutoTokenizer, AutoModelForCausalLM
 from rich.console import Console
 from rich.panel import Panel
 from rich.rule import Rule
@@ -39,7 +40,6 @@ lock = Lock()
 
 
 def dataframe_to_markdown(df: pd.DataFrame, filename: str) -> str:
-    """Convert a pandas DataFrame to a Markdown table."""
     MAX_ROWS = 50
     preview_df = df.head(MAX_ROWS)
     metadata = [
@@ -68,7 +68,7 @@ def get_embed_model():
         HuggingFaceEmbeddings(model_name="sentence-transformers/all-mpnet-base-v2")
     )
 
-# --- LLM factory with fallback and no quantization ---
+# --- LLM factory for Microsoft Phi models (silent) ---
 def create_llm(model_name: str) -> HuggingFaceLLM:
     use_cuda = torch.cuda.is_available()
     dtype = torch.float16 if use_cuda else torch.float32
@@ -92,35 +92,32 @@ def create_llm(model_name: str) -> HuggingFaceLLM:
     return HuggingFaceLLM(
         model=model,
         tokenizer=tokenizer,
-        max_new_tokens=300,
+        max_new_tokens=150,
         context_window=2048,
         device_map="auto" if use_cuda else "cpu",
-        system_prompt="You are Nexus, a helpful document assistant. Answer questions based only on the provided documents. Be concise and direct.",
-        query_wrapper_prompt="Question: {query_str} Answer: ",
+        query_wrapper_prompt="Question: {query_str}\nAnswer:",
+        generate_kwargs={
+            "do_sample": False,
+            "pad_token_id": tokenizer.pad_token_id,
+            "eos_token_id": tokenizer.eos_token_id,
+        },
     )
 
 def get_llm() -> HuggingFaceLLM:
-    candidates = [
-        "microsoft/phi-2",
-        "microsoft/phi-1_5",
-        "microsoft/phi-1"
-    ]
+    candidates = ["microsoft/phi-2", "microsoft/phi-1_5"]
     for name in candidates:
         try:
-            console.print(f"[dim]Trying {name}...[/dim]")
             llm = create_llm(name)
+            # Silent test – just ensure it returns something
             test = llm.complete("What is 2+2?")
             if test.text and test.text.strip():
-                console.print(f"[green]✔ Using {name} – test: 2+2 = {test.text.strip()}[/green]")
                 return llm
-            else:
-                console.print(f"[yellow]⚠ {name} returned empty, trying next...[/yellow]")
-        except Exception as e:
-            console.print(f"[yellow]⚠ {name} failed: {e}, trying next...[/yellow]")
+        except Exception:
+            continue
     console.print("[bold red]❌ No working Phi model found. Please check your installation.")
     exit(1)
 
-# --- Chunking (smaller to avoid token overflow) ---
+# --- Chunking ---
 from llama_index.core.node_parser import SimpleNodeParser
 
 def chunk_documents(documents: List[Document]) -> List[Document]:
@@ -149,7 +146,6 @@ def load_documents(directory: str) -> List[Document]:
             console.print(f"[yellow]Skipped unsupported: {filename}[/yellow]")
     return docs
 
-# --- Indexing with tree_summarize ---
 def build_index_and_engine(documents: List[Document], persist: bool = True):
     nodes = chunk_documents(documents)
     storage_context = StorageContext.from_defaults()
@@ -157,7 +153,7 @@ def build_index_and_engine(documents: List[Document], persist: bool = True):
     index.insert_nodes(nodes)
     if persist:
         index.storage_context.persist(persist_dir=PERSIST_DIR)
-    return index, index.as_query_engine(response_mode="tree_summarize", verbose=True)
+    return index, index.as_query_engine(response_mode="tree_summarize", verbose=False)  # silent
 
 def load_or_build_index(documents: List[Document]):
     required_files = ["docstore.json", "vector_store.json", "index_store.json"]
@@ -166,7 +162,7 @@ def load_or_build_index(documents: List[Document]):
             console.print("[bold]Loading existing index from disk...[/bold]")
             storage_context = StorageContext.from_defaults(persist_dir=PERSIST_DIR)
             index = load_index_from_storage(storage_context)
-            return index, index.as_query_engine(response_mode="tree_summarize", verbose=True)
+            return index, index.as_query_engine(response_mode="tree_summarize", verbose=False)
         except Exception as e:
             console.print(f"[bold yellow]Failed to load index: {e}. Rebuilding...[/bold yellow]")
     console.print("[bold]Building new index...[/bold]")
@@ -284,7 +280,7 @@ def main():
     show_intro()
 
     with console.status("[bold green]Loading models...", spinner="dots"):
-        llm = get_llm()
+        llm = get_llm()          # silent – no test output
         Settings.llm = llm
         Settings.embed_model = get_embed_model()
         Settings.chunk_size = 128
