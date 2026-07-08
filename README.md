@@ -354,14 +354,6 @@ An internet connection is required only during the first execution to download t
 
 ---
 
-# Author
-
-**Soumyadeep Basu**
-
-This project was developed as part of an undergraduate engineering curriculum.
-
----
-
 # Acknowledgements
 
 Nexus is built upon the following open-source technologies:
