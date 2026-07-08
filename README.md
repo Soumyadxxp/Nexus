@@ -125,10 +125,8 @@ Nexus/
 ```bash
 git clone https://github.com/Soumyadxxp/Nexus_Offline_RAG.git
 
-cd Nexus
+cd Nexus_Offline_RAG
 ```
-
----
 
 ## 2. Create a Virtual Environment
 
